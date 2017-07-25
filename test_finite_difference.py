@@ -1,8 +1,7 @@
 import unittest
-import numpy
-from unittest.mock import Mock
+import lsm
 
-class TestLsm(unittest.TestCase):
+class TestFiniteDifferencde(unittest.TestCase):
     def setUp(self):
         self._grid = []
         self._seed = 1
@@ -19,12 +18,8 @@ class TestLsm(unittest.TestCase):
         actual = lsm.generate_bm(self._grid, self._seed)
         print(actual)
 
-    def test_create_bs_generator(self):
-        actual = lsm.create_bs_path_generator(self._spot, self._r, self._sigma)
-        actual(self._dt, self._dw)
-
-    #def testEasyClacFail(self):
-     #   self.assertEqual((0, 4 + 2, "wrong calclation"))
-
     def tearDown(self):
-        print('tearDown')
+        print('finite_difference_test_finish')
+
+    def assertTest(self):
+        self.assertAlmostEquals(0.1, 0.1)
