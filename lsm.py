@@ -3,9 +3,19 @@ import math
 import sys
 
 def generate_bm(grid_data, seed):
+    """
+    
+    :param grid_data: 
+    :param seed: 
+    :return: 
+    """
     dt = numpy.diff(grid_data)
     numpy.random.seed(seed)
     x = numpy.random.randn(len(dt))
+    print(x)
+    y = numpy.random.random()
+    print("y value is")
+    print(y)
     dw = numpy.multiply(numpy.sqrt(dt), x)
     return (dt, dw)
 
