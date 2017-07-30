@@ -49,6 +49,19 @@ def swap_value_function(solved_zero_rates,
     return get_pv
 
 
+def calculate_zero_rates(maturities,
+                         benchmark):
+    # 全グリッドでzero rateのCalibration
+    map = {}
+    for maturity in maturities:
+        func = swap_value_function(map,
+                                   maturity,
+                                   benchmark[maturity])
+        y = op.fsolve(func, 0.01)
+        #map.update({maturity: y[0]})
+
+    return map
+
 if __name__ == '__main__':
     # grid 間隔を設定
     tau = 0.5
@@ -74,11 +87,16 @@ if __name__ == '__main__':
                                    maturity,
                                    benchmark[maturity])
         zero_rate = op.fsolve(func, 0.01)
-        solved_zero_rate.update({maturity: zero_rate[0]})
+        #solved_zero_rate.update({maturity: zero_rate[0]})
 
     print(solved_zero_rate)
 
     # Calibration結果をもとにカーブを作成
     curve = piecewise_linear_yield_curve(solved_zero_rate)
+    for grid in range(0, 10):
+        print(curve(grid))
+
+    solved_zero_rate = calculate_zero_rates(maturities, benchmark)
+    print(solved_zero_rate[1])
     for grid in range(0, 10):
         print(curve(grid))
