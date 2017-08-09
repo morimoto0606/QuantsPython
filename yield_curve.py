@@ -62,14 +62,19 @@ def calculate_zero_rates(maturities,
 
     return map
 
+
 if __name__ == '__main__':
+    
+    f = lambda x: np.sin(x)
+    print('0,1', op.fsolve(f, 0.1))
+    print('3', op.fsolve(f, 3))
     # grid 間隔を設定
     tau = 0.5
     # benchmarkとするスワップれーとを設定（Andersen Piterberg参照）
     maturities = [1, 2, 3, 5, 7, 10, 12, 15, 20, 25]
     swap_rates = np.array([4.2, 4.3, 4.7, 5.4, 5.7, 6, 6.1, 5.9, 5.6, 5.55]) / 100
     benchmark = dict(zip(maturities, swap_rates))
-
+    
     # 一番最初のグリッド（１Y）だけチェック
     solved_zero_rate = {}
     swap_value = swap_value_function(solved_zero_rate,
@@ -82,6 +87,7 @@ if __name__ == '__main__':
 
     # 全グリッドでzero rateのCalibration
     solved_zero_rate = {}
+
     for maturity in maturities:
         func = swap_value_function(solved_zero_rate,
                                    maturity,
