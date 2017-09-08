@@ -18,13 +18,15 @@ def piecewise_linear_yield_curve(base_zero_rates):
 
 def swap_value_function(solved_zero_rates,
                         target_maturity,
-                        target_swap_rate):
+                        target_swap_rate,
+                        tau):
     """
-    solved_zero ratesを補間し、target maturityの期間でtarget swaprateのクーポンすスワップの時価関数をかえす。
-    :param solved_zero_rates: dictionary of (solved grid , value) 
+    :param solved_zero_rates: dictionary of (solved grid , value)
     :param target_maturity:  target swap maturity
     :param target_swap_rate: target swap rate
     :return: ターゲットグリッドのイールドを引数としたスワップの時価関数
+    :param tau: day count fraction
+    :return:
     """
     def get_pv(zero_rate_on_target_grid):
         """
@@ -49,60 +51,61 @@ def swap_value_function(solved_zero_rates,
     return get_pv
 
 
-def calculate_zero_rates(maturities,
-                         benchmark):
-    # 全グリッドでzero rateのCalibration
-    map = {}
+def make_yield_curve(tau, maturities, swap_rates):
+    benchmark = dict(zip(maturities, swap_rates))
+
+    # zero rateのCalibration
+    solved = {}
     for maturity in maturities:
-        func = swap_value_function(map,
-                                   maturity,
-                                   benchmark[maturity])
-        y = op.fsolve(func, 0.01)
-        #map.update({maturity: y[0]})
-
-    return map
-
-
-if __name__ == '__main__':
+        f = swap_value_function(solved,
+                                maturity,
+                                benchmark[maturity],
+                                tau)
+        print('f', f([0.1]))
+        zero_rate = op.fsolve(f, 0.01)
+        solved.update({maturity: zero_rate[0]})
+        print(solved)
+    return piecewise_linear_yield_curve(solved)
     
-    f = lambda x: np.sin(x)
-    print('0,1', op.fsolve(f, 0.1))
-    print('3', op.fsolve(f, 3))
+if __name__ == '__main__':
     # grid 間隔を設定
     tau = 0.5
     # benchmarkとするスワップれーとを設定（Andersen Piterberg参照）
     maturities = [1, 2, 3, 5, 7, 10, 12, 15, 20, 25]
     swap_rates = np.array([4.2, 4.3, 4.7, 5.4, 5.7, 6, 6.1, 5.9, 5.6, 5.55]) / 100
     benchmark = dict(zip(maturities, swap_rates))
-    
+
     # 一番最初のグリッド（１Y）だけチェック
     solved_zero_rate = {}
     swap_value = swap_value_function(solved_zero_rate,
                                      1,
-                                     benchmark[1])
+                                     benchmark[1],
+                                     tau)
     rate0 = swap_value([0.02])
     rate = op.fsolve(swap_value, 0.01)
     print(rate)
     print(swap_value(rate))
 
-    # 全グリッドでzero rateのCalibration
+    #全グリッドでzero rateのCalibration
     solved_zero_rate = {}
-
     for maturity in maturities:
         func = swap_value_function(solved_zero_rate,
                                    maturity,
-                                   benchmark[maturity])
+                                   benchmark[maturity],
+                                   tau)
+        print('func', func([0.1]))
         zero_rate = op.fsolve(func, 0.01)
-        #solved_zero_rate.update({maturity: zero_rate[0]})
-
-    print(solved_zero_rate)
+        solved_zero_rate.update({maturity: zero_rate[0]})
+        print(solved_zero_rate)
 
     # Calibration結果をもとにカーブを作成
     curve = piecewise_linear_yield_curve(solved_zero_rate)
     for grid in range(0, 10):
         print(curve(grid))
-
-    solved_zero_rate = calculate_zero_rates(maturities, benchmark)
-    print(solved_zero_rate[1])
+        
+    print('new function')
+    new_curve = make_yield_curve(tau, maturities, swap_rates)
     for grid in range(0, 10):
-        print(curve(grid))
+        print(new_curve(grid))
+        
+        
