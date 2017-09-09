@@ -2,6 +2,7 @@ import unittest
 import numpy
 from unittest.mock import Mock
 
+
 class TestLsm(unittest.TestCase):
     def setUp(self):
         self._grid = []
