@@ -1,0 +1,24 @@
+#coding:utf-8
+import matplotlib.pyplot as plt
+
+# データの作成
+date1 = [36,82,77,52,65, 50]#数学の点数
+date2 = [20,75,58,45,67]#理科の点数
+date4 = [20,75,58,45,67]#理科の点数
+date8 = [20,75,58,45,67]#理科の点数
+hige = (date1, date2, date4, date8)
+
+fig = plt.figure()
+ax = fig.add_subplot(111)
+
+# 箱ひげ図をつくる
+bp = ax.boxplot(hige)
+ax.set_xticklabels(['math', 'science'])
+
+plt.title('Box plot')
+plt.grid()
+plt.xlabel('point')
+plt.ylabel('value')
+plt.title('Box plot')
+plt.ylim([0,100])
+plt.show()

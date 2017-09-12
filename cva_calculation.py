@@ -207,7 +207,7 @@ def cva_calculation(
         r,
         sigma,
         s0,
-        exposure_calculator,
+        path_dict_for_simulation,
         exe_calculator,
         path_generator,
         path_num_for_sim,
@@ -236,20 +236,15 @@ def cva_calculation(
     # make exposure by lsm
     exposure_sm = {}
     for t in calculation_grid[calculation_grid > 0.0]:
-        #g = generate_exposure_stochastic_mesh(t, path_dict_for_exposure,
-        #                                      payoff_dict, r, sigma, pdf)
         g = exposure_calculator(t, path_dict_for_exposure, payoff_dict)
         exposure_sm[t] = g
     exposure_sm[0] = exposure_sm[1]
     # integration for cva
-    path_dict_for_simulation = path_generator(s0=s0, path_num=path_num_for_sim,
-                                                  grid=calculation_grid, r=r, sigma=sigma,
-                                                  seed=seed_for_sim)
-    
-    epe_sm = []
-    ene_sm = []
+
+
+    epe_explicit = []
+    epe_implicit = []
     epe_analytic = []
-    ene_analytic = []
 
     for t in calculation_grid:
         current_state = path_dict_for_simulation[t]
@@ -261,96 +256,49 @@ def cva_calculation(
             analytic_exposure += payoff_dict[s](path_dict_for_simulation[t])
         
         e_sm = exposure_sm[t](current_state)
-        epe_sm.append(exe_calculator(1, e_sm, future_payoff, current_state))
-        ene_sm.append(exe_calculator(-1, e_sm, future_payoff, current_state))
+        epe_explicit.append(explicit_exe_calculator(1, e_sm, future_payoff, current_state))
+        epe_implicit.append(implicit_exe_calculator(1, e_sm, future_payoff, current_state))
         epe_analytic.append(analytic_exe_calculator(t, 1, analytic_exposure))
-        ene_analytic.append(analytic_exe_calculator(t, -1, analytic_exposure))
-    ee_sm = [a + b for (a, b) in zip(epe_sm, ene_sm)]
-    ee_analytic = [a + b for (a, b) in zip(epe_analytic, ene_analytic)]
 
-    f = open('exposure_implicit_sm.csv', 'a')
-    writer = csv.writer(f, lineterminator='\n')
-    writer.writerow([''])
-    writer.writerow(['ee_sm', path_num_for_exposure, seed_for_exposure, ee_sm])
-    writer.writerow(['epe_sm', path_num_for_exposure, seed_for_exposure, epe_sm])
-    writer.writerow(['ene_sm', path_num_for_exposure, seed_for_exposure, ene_sm])
-    f.close()
-    
-    print('ee_sm', ee_sm)
-    print('epe_sm', epe_sm)
-    print('ene_sm', ene_sm)
-    print ('ee_analytic', ee_analytic)
-    print ('epe_analytic', epe_analytic)
-    print ('ene_analytic', ene_analytic)
 
     dts = np.diff(calculation_grid)
-    cva = np.dot(epe_sm[1:], dts)
-    dva = np.dot(ene_sm[1:], dts)
+    cva_explicit = np.dot(epe_explicit[1:], dts)
+    cva_implicit = np.dot(epe_implicit[1:], dts)
+    cva_analytic = np.dot(epe_analytic[1:], dts)
+
 
     calculation_grid = np.append(calculation_grid, [1.1])
     print('calculation_grid', calculation_grid)
     print('dts', dts)
-    print('cva', cva)
-    print('dva', dva)
-    g = open('cva_implicit_sm.csv', 'a')
-    writer = csv.writer(g, lineterminator='\n')
-    writer.writerow([path_num_for_exposure, seed_for_exposure, cva, dva])
-    g.close()
-    
-    ee_sm.append(0)
-    epe_sm.append(0)
-    ene_sm.append(1)
-    ee_analytic.append(0)
+    print('cva_explicit', cva_explicit)
+    print('cva_analytic', cva_analytic)
+    print('cva_implicit', cva_implicit)
+
+
+    epe_explicit.append(0)
+    epe_implicit.append(0)
     epe_analytic.append(0)
-    ene_analytic.append(0)
     np.append(calculation_grid, [1.1])
-    print ('ene', ene_sm)
-    print ('calculation grid', calculation_grid)
 
-    print(len(ee_sm))
-    print (len(epe_sm))
-    print(len(calculation_grid))
-    plt.plot(calculation_grid, ee_sm, label='ee_sm', linestyle='solid')
-    plt.plot(calculation_grid, epe_sm, label='epe_sm', linestyle='dashed')
-    plt.plot(calculation_grid, ene_sm, label='ene_sm')
-    plt.plot(calculation_grid, epe_analytic, label='epe_analytic')
-    plt.plot(calculation_grid, ene_analytic, label='ene_analytic')
-    plt.plot(calculation_grid, ee_analytic, label='ee_analytic')
-    plt.show()
+    f = open('exposure.csv', 'a')
+    writer = csv.writer(f, lineterminator='\n')
+    writer.writerow([''])
+    writer.writerow(['path_num', 'seed', 'epe_explicit', path_num_for_exposure, seed_for_exposure, epe_explicit])
+    writer.writerow(['path_num', 'seed', 'epe_implicit', path_num_for_exposure, seed_for_exposure, epe_implicit])
+    writer.writerow(['path_num', 'seed', 'epe_analytic', path_num_for_exposure, seed_for_exposure, epe_analytic])
+    f.close()
 
-    return 0
+
+
+    #plt.plot(calculation_grid, epe_explicit, label='epe_sm', linestyle='dashed')
+    #plt.plot(calculation_grid, epe_implicit, label='epe_implicit', linestyle='dashdot')
+    #plt.plot(calculation_grid, epe_analytic, label='epe_analytic')
+    #plt.show()
+
+    return [cva_explicit, cva_implicit, cva_analytic]
 
 
 if __name__ == '__main__':
-#    # path setting for Brownian Motion
-#    r = 0
-#    sigma = 1
-#    s0 = 0
-#
-#    # payoff setting
-#    payment_grid = np.array([1.0])
-#    payoff = lambda x: x
-#    calculation_grid = np.linspace(0, 1.0, 11)
-#    path_num_for_simulation = 10
-#    seed_for_simulation = 10000
-#
-#    path_num_for_exposures = [10]
-#
-#    exposure_calculator = lambda t, path_dict_for_exposure, payoff_dict:\
-#        generate_exposure_stochastic_mesh(t, path_dict_for_exposure, payoff_dict, r, sigma, pdf_normal)
-#    for path_num_for_exposure in path_num_for_exposures:
-#        for seed in range(0, 1):
-#            cva_calculation(r, sigma, s0,
-#                            exposure_calculator,
-#                            explicit_exe_calculator,
-#                            generate_normal_path_dict,
-#                            path_num_for_simulation,
-#                            path_num_for_exposure,
-#                            seed_for_simulation,
-#                            seed_for_simulation + seed,
-#                            calculation_grid,
-#                            payment_grid,
-#                            payoff)
 
     # path setting for Black Scholes Model
     r = 0.0
@@ -361,44 +309,45 @@ if __name__ == '__main__':
     payment_grid = np.linspace(2.0, 10.0, 5)
     print ('payment_grid', payment_grid)
     payoff = lambda x: x - s0
-    calculation_grid = np.linspace(0, 10.0, 11)
-    path_num_for_simulation = 16000
-    path_num_for_exposure = 10
-    seed_for_simulation = 1000
-    seed_for_exposure = 10000
-    degree = 3
-   
+    calculation_grid = np.linspace(0, 10.0, 101)
+    path_num_for_simulation = 10000
+    path_num_for_exposures = [500, 1000, 2000, 5000, 10000]
+    seed_for_simulation = 0
+
     exposure_calculator = lambda t, path_dict_for_exposure, payoff_dict:\
         generate_exposure_stochastic_mesh(t, path_dict_for_exposure, payoff_dict, r, sigma, pdf_log_normal)
-    cva_calculation(r, sigma, s0,
-                       exposure_calculator,
-                       explicit_exe_calculator,
-                       generate_lognormal_path_dict,
-                       path_num_for_simulation,
-                       path_num_for_exposure,
-                       seed_for_simulation,
-                       seed_for_exposure,
-                       calculation_grid,
-                       payment_grid,
-                       payoff)
 
-    path_num_for_exposure = 500
-    cva_calculation(r, sigma, s0,
-                       exposure_calculator,
-                       explicit_exe_calculator,
-                       generate_lognormal_path_dict,
-                       path_num_for_simulation,
-                       path_num_for_exposure,
-                       seed_for_simulation,
-                       seed_for_exposure,
-                       calculation_grid,
-                       payment_grid,
-                       payoff)
-    f = open('exposure_implicit_sm.csv', 'r')
-    reader = csv.reader(f)
-    header = next(reader)
-    for row in reader:
-        print(row)
-    f.close()
-    print('hello world')
+    path_dict_for_simulation = generate_lognormal_path_dict(s0=s0, path_num=path_num_for_simulation,
+                                                            grid=calculation_grid, r=r, sigma=sigma, seed=seed_for_simulation)
+
+    # TODO loop for seed
+    for path_num_for_exposure in path_num_for_exposures:
+        cva_explicit_seed = []
+        cva_implicit_seed = []
+        cva_analytic_seed = []
+        for seed_for_exposure in range(1, 11):
+            ret = cva_calculation(r, sigma, s0,
+                    path_dict_for_simulation,
+                    exposure_calculator,
+                    generate_lognormal_path_dict,
+                    path_num_for_simulation,
+                    path_num_for_exposure,
+                    seed_for_simulation,
+                    seed_for_exposure,
+                    calculation_grid,
+                    payment_grid,
+                    payoff)
+            cva_explicit_seed.append(ret[0])
+            cva_implicit_seed.append(ret[1])
+            cva_analytic_seed.append(ret[2])
+
+        g = open('cva.csv', 'a')
+        writer = csv.writer(g, lineterminator='\n')
+        writer.writerow([''])
+        writer.writerow(['path_num', 'seed', 'cva_explicit', path_num_for_exposure, cva_explicit_seed])
+        writer.writerow(['path_num', 'seed', 'cva_implicit', path_num_for_exposure, cva_implicit_seed])
+        writer.writerow(['path_num', 'seed', 'cva_analytic', path_num_for_exposure, cva_analytic_seed])
+        g.close()
+
+    print('Finished !')
 
