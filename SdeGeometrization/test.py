@@ -15,6 +15,9 @@ path = np.array([[1,2],[np.nan,np.nan],[3,4],[5,6]])
 path = path[~np.isnan(path)]
 print(path.reshape(int(path.size/2),2))
 
+ini = [3,4]
+liftedini = list(ini) + list(np.identity(2).flatten())
+print("liftedini", liftedini)
 
 #tfe.enable_eager_execution()
 
