@@ -8,7 +8,7 @@ def generate_path(
     no_step: int,
     no_state: int):
     uniform_rnd = sobol_seq.i4_sobol_generate(
-        dim_num = 1, n = no_step * no_path* no_state)
+        dim_num = no_step * no_state, n = no_path)
     normal = norm.ppf(uniform_rnd)
     normal = np.transpose(normal)
     normal = np.reshape(normal, (no_path, no_step, no_state))

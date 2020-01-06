@@ -12,14 +12,14 @@ from numpy.linalg import inv
 
 class TestStochasticLift(unittest.TestCase):
     def setUp(self):
-        self.vec_field = Sabr(1.0, 0.4, 0.9, -0.7)
-        self.stepsize = .5
+        self.vec_field = Sabr(1.0, .4, .9, -0.7)
+        self.stepsize = .25
         self.step = int(1.0 / self.stepsize)
         print(self.step)
-        self.normal = np.array([0.3, 0.5]) 
+        self.normal = np.array([0.3, 0.4]) 
         self.bm = np.sqrt(self.stepsize) * self.normal
-        self.rk = RungeKutta4()
-        self.rk_diff = RungeKutta4Differentiable()
+        self.rk = RungeKutta5()
+        self.rk_diff = RungeKutta5Differentiable()
         self.ini = np.array([1.0, 0.3])
         self.lift = StochasticLift(self.stepsize, self.rk, self.rk_diff, self.vec_field, self.ini)
 
@@ -73,21 +73,27 @@ class TestStochasticLift(unittest.TestCase):
     def test_price(self):
         strike = 1.05
         payoff = lambda x: np.maximum(x- strike, 0)
-        path = self.lift.generate_path(100, self.step)
-        print(path)
+        drift_func = lambda x: self.vec_field.get_v0()(x)
+
+        path = self.lift.generate_path(10000, self.step)
+        drift1 = np.array([drift_func(p) for p in path])[:,0]
+        drift1 = drift1[~np.isnan(drift1)]
+        print(drift1)
+        drift0 = drift_func(self.ini)[0]
+        print(drift0)
+        drift= np.mean(0.5 * (drift0+drift1))
         path = path[:,0]
-        print(path)
         path = path[~np.isnan(path)]
-        print(path)
         pay = payoff(path)
-        print(pay)
         pv = np.mean(pay)
         stdv = np.std(pay)
+        print("drift", drift)
         print("step", self.step)
         print("pv10", pv)
         print("std10", stdv)
         maxmum = np.max(pay)
         print("max pay", maxmum)
+        print("e^0.5*sigma**2", np.exp(0.5 * 0.09))
 
 
 if __name__ == "__main__":

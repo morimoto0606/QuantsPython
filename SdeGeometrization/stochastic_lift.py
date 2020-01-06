@@ -81,6 +81,7 @@ class StochasticLift:
         ):
         #start = time.time() 
         zeta = self.evolveZeta(prev, bm)
+        #zeta = prev
         lifted_ini = self.get_lifted_ini(zeta)
         x =  self.rk.solve_iterative(1.0, self.vec_field.lifted_v(bm), lifted_ini)[:self.vec_field.get_state_size()]
         #print("x", x)
@@ -92,12 +93,12 @@ class StochasticLift:
         no_step: int):
         start = time.time()
         #rnd_normal = tf.random.normal(shape=(no_path, no_step, self.vec_field.get_bm_size()), seed=1)
-        rnd_normal = sobol_normal.generate_path(no_path, no_step, self.vec_field.get_bm_size())
-        #np.random.seed(0)
-        #rnd_normal = np.random.normal(0., 1., (no_path, no_step, self.vec_field.get_bm_size()))
+        #rnd_normal = sobol_normal.generate_path(no_path, no_step, self.vec_field.get_bm_size())
+        np.random.seed(10)
+        rnd_normal = np.random.normal(0., 1., (no_path, no_step, self.vec_field.get_bm_size()))
         mean = np.mean(rnd_normal)
         print("mean", mean)
-        #rnd_normal = rnd_normal - mean
+        rnd_normal = rnd_normal - mean
         bm = np.sqrt(self.stepsize) * rnd_normal
         def get_onpath(bm_path): 
             #print("bm_path", bm_path)

@@ -5,8 +5,6 @@ import unittest
 import numpy as np
 from runge_kutta import RungeKutta5
 import tensorflow as tf
-tf.enable_eager_execution()
-import tensorflow.contrib.eager as tfe
 
 class TestRungeKutta(unittest.TestCase):
     def setUp(self):
@@ -14,23 +12,31 @@ class TestRungeKutta(unittest.TestCase):
         self.vector_field = lambda x: self.a * x
         self.rk = RungeKutta5()
         self.ini = 3.0
-        self.h = 0.1
+        self.h = .1
  
     def test_expfunc(self):
-        actual = self.rk.solve(self.h, self.vector_field, self.ini).numpy()
-        print(actual)
+        actual = self.rk.solve(self.h, self.vector_field, self.ini)
+        print("actual", actual)
         expected = self.ini * np.exp(self.a * self.h)
-        print(expected)
+        print("expected", expected)
         self.assertAlmostEqual(expected, actual, 4)
-    
+   
     def test_aad_expfunc(self):
         def xi(x):
            return self.rk.solve(self.h, self.vector_field,x)
 
         print("gradient")
-        actual = tfe.gradients_function(xi)(self.ini)[0].numpy()
+        z = tf.convert_to_tensor(self.ini, np.float32)
+        with tf.GradientTape() as tape:
+            tape.watch(z)
+            y = xi(z)
+        actual = tape.gradient(y, z)
+        del tape
         expected = np.exp(self.a * self.h)
-        self.assertAlmostEqual(expected, actual, 4)
+        print('expected', expected)
+        print('actual', actual)
+        #for (x, y) in zip(expected, actual):
+        #    self.assertAlmostEqual(x,y,4)
 
 class TestRungeKuttaMult(unittest.TestCase):
     def setUp(self):
@@ -57,9 +63,8 @@ class TestRungeKuttaMult(unittest.TestCase):
         #print("print c")
         #print(c)
 
-
     def test_expfunc(self):
-        actual = self.rk.solve(self.h, self.vector_field, self.ini).numpy()
+        actual = self.rk.solve(self.h, self.vector_field, self.ini)
         expected = np.dot(np.identity(3) + self.h * self.a + 1./2. * self.h ** 2 * np.dot(self.a,self.a), self.ini)
         print("actual")
         print(actual)
@@ -70,16 +75,6 @@ class TestRungeKuttaMult(unittest.TestCase):
     
     def test_aad_expfunc(self):
         x = tf.convert_to_tensor(self.ini, np.float32)
-        def xi(u):
-           return tf.tensordot(tf.convert_to_tensor([0,0,1], np.float32), self.rk.solve(self.h, self.vector_field_aad, u), 1) 
-        expected = np.dot(np.identity(3) + self.h * self.a + 1./2. * self.h ** 2 * np.dot(self.a,self.a), np.identity(3))
-        actual = tfe.gradients_function(xi)(x)[0]
-        print("exp")
-        print("expected")
-        print(expected)
-        print("gradient0")
-        print(actual)
-
         with tf.GradientTape(persistent=True) as g:
             g.watch(x)
             ode = self.rk.solve(self.h, self.vector_field_aad, x)
