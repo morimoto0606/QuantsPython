@@ -94,8 +94,13 @@ def hjb_solver_loop(t, dt, kappa, xi, phi, q, qAC, lamb):
         for i in range(1, h.shape[0]):
             y = np.exp(-1) * lamb / kappa * np.exp(-kappa * (h[i, k+1] - h[i-1, k+1]))
             h[i, k] = h[i, k+1] + dt * (-phi * np.power((q[i] - qAC[k+1]), 2) + y)
+        
+        idx_exe = np.zeros(h.shape[0], dtype=bool)  # 長さ h.shape[0] のブール配列を作成し、すべて False で初期化
+        for i in range(1, h.shape[0]):
+            if h[i-1, k] - h[i, k] - xi > 0:
+                idx_exe[i] = True  # 条件を満たす場合、True に設定
 
-        idx_exe = np.insert(h[0:(h.shape[0]-1), k] - h[1:(h.shape[0]), k] - xi > 0, 0, 0)
+        #idx_exe = np.insert(h[0:(h.shape[0]-1), k] - h[1:(h.shape[0]), k] - xi > 0, 0, 0)
         exe[:, k] = idx_exe
         h[1:h.shape[0], k] = np.maximum(h[0:(h.shape[0]-1), k] - xi, h[1:h.shape[0], k])
 
@@ -264,11 +269,16 @@ def hjb_solver_internal_flow_power(t, dt, kappa, xi, phi, q, qAC, lambL, lambI, 
             zeta[i, k] = np.argmax(morder)
             #print(k, i, len(morder), morder, zeta[i, k])
  
-        idx_exe = np.insert(h[0:(h.shape[0]-1), k] - h[1:(h.shape[0]), k] - (xi * zeta[1:h.shape[0], k] + [alphaM * (betaM + np.power(z, gammaM)) for z in zeta[1:h.shape[0], k]])  > 0, 0, 0)
-        #print('idex_exe', idx_exe)
+        idx_exe = np.zeros(h.shape[0], dtype=int)  # 長さ h.shape[0] のブール配列を作成し、すべて False で初期化
+        for i in range(1, h.shape[0]):
+            if h[i-zeta[i, k], k] - h[i, k] - (xi * zeta[i, k] + alphaM * (betaM + np.power(zeta[i, k], gammaM))) > 0:
+                idx_exe[i] = 1# 条件を満たす場合、True に設定
+
+       #print('idex_exe', idx_exe)
         exe[:, k] = idx_exe
         for i in range(1,h.shape[0]):
             h[i, k] = np.maximum(h[i-zeta[i, k], k] - (xi * zeta[i, k] + alphaM * (betaM + np.power(zeta[i, k], gammaM))), h[i, k])
+
     return h, exe, df, delta_l, delta_i, zeta
 
 

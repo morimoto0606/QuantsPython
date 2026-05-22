@@ -111,7 +111,7 @@ betaM = 1
 gammaM =2 
 print(f'lambL={lambL}, lambI={lambI}, alphaL={alphaL}, alphaM={alphaM}, betaM={betaM}, gammaM={gammaM}')
 
-omega, exe = lth.hjb_solver(t, dt, kappa, xi, phi, q, qAC, lamb)
+omega, exe = lth.hjb_solver_loop(t, dt, kappa, xi, phi, q, qAC, lamb)
 h2, exe2, df2, delta_l, delta_i, zeta \
     = lth.hjb_solver_internal_flow_power(t, dt, kappa, xi, phi, q, qAC, lambL, lambI, alphaL, alphaM, betaM, gammaM)
 
@@ -167,7 +167,7 @@ plt.show()
 lambL = 50/60
 lambI = 60/60
 alphaL = 0.005
-alphaM = 0.05
+alphaM = 0.001
 betaM = 0.0
 gammaM = 0.5
 print(f'lambL={lambL}, lambI={lambI}, alphaL={alphaL}, alphaM={alphaM}, betaM={betaM}, gammaM={gammaM}')
@@ -176,9 +176,10 @@ omega, exe = lth.hjb_solver(t, dt, kappa, xi, phi, q, qAC, lamb)
 h2, exe2, df2, delta_l, delta_i, zeta \
     = lth.hjb_solver_internal_flow_power(t, dt, kappa, xi, phi, q, qAC, lambL, lambI, alphaL, alphaM, betaM, gammaM)
 
-
+print(exe, t)
 # obtain the optimal time at which to execute market orders
 t_opt = lth.find_opt_t(exe, t)
+print(exe2,t)
 t_opt2 = lth.find_opt_t(exe2, t)
 print(t_opt)
 print(t_opt2)
